@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "path": "/static/*",
+      "target": { "kind": "Static" }
+    },
+    {
+      "path": "/*",
+      "target": { "kind": "Compute", "src": "default" }
+    }
+  ],
+  "computeResources": [
+    {
+      "name": "default",
+      "runtime": "provided",
+      "entrypoint": "server"
+    }
+  ]
+}

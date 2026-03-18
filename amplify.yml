@@ -1,0 +1,27 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Download and setup Dart
+        - wget https://storage.googleapis.com/dart-archive/channels/stable/release/latest/sdk/dartsdk-linux-x64-release.zip
+        - unzip dartsdk-linux-x64-release.zip
+        - export PATH="$PATH":"$PWD/dart-sdk/bin"
+        - dart pub global activate jaspr_cli
+    build:
+      commands:
+        # Run Jaspr build
+        - $HOME/.pub-cache/bin/jaspr build
+        # AUTOMATIC STRUCTURE CREATION:
+        - mkdir -p .amplify-hosting/static
+        - mkdir -p .amplify-hosting/compute/default
+        # Move Jaspr web files (JS/CSS/Images) to static folder
+        - cp -r build/jaspr/web/* .amplify-hosting/static/
+        # Move the server binary to the compute folder
+        - cp build/jaspr/server .amplify-hosting/compute/default/
+        # Copy the manifest into the deployment folder
+        - cp deploy-manifest.json .amplify-hosting/
+  artifacts:
+    baseDirectory: .amplify-hosting
+    files:
+      - '**/*'
