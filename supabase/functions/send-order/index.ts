@@ -1,5 +1,5 @@
 // Supabase Edge Function: send-order
-// Uses Resend API for email delivery. Set RESEND_API_KEY in Supabase secrets.
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,7 +8,8 @@ const corsHeaders = {
 
 const TO_EMAIL = Deno.env.get('ORDER_TO_EMAIL') ?? 'keerthanrao8@gmail.com';
 const FROM_NAME = Deno.env.get('ORDER_FROM_NAME') ?? 'ElectraLap Orders';
-const FROM_EMAIL = Deno.env.get('ORDER_FROM_EMAIL') ?? 'orders@electralap.in';
+const FROM_EMAIL = Deno.env.get('ORDER_FROM_EMAIL') ?? 'onboarding@resend.dev'; // Use verified domain here
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 function escapeHtml(value: string) {
   return value
@@ -19,39 +20,29 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    if (!RESEND_API_KEY) {
+      throw new Error('Missing RESEND_API_KEY secret');
+    }
+
     const body = await req.json();
-    const customer = body?.customer ?? {};
-    const shipping = body?.shipping ?? {};
-    const cart = Array.isArray(body?.cart) ? body.cart : [];
-    const grandTotal = body?.grand_total ?? 0;
+    const { customer = {}, shipping = {}, cart = [], grand_total: grandTotal = 0 } = body;
 
-    if (!customer.full_name || !customer.email || !customer.phone) {
-      return new Response(JSON.stringify({ error: 'Missing customer fields' }), {
+    // Validation logic...
+    if (!customer.email || cart.length === 0) {
+      return new Response(JSON.stringify({ error: 'Missing required order data' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    if (!shipping.address1 || !shipping.city || !shipping.state || !shipping.pincode) {
-      return new Response(JSON.stringify({ error: 'Missing shipping fields' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (cart.length === 0) {
-      return new Response(JSON.stringify({ error: 'Cart is empty' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    // Build Email Rows
     const rows = cart
       .map((item: any) => {
         const name = escapeHtml(String(item.name ?? ''));
@@ -60,111 +51,67 @@ Deno.serve(async (req) => {
         const total = Number(item.line_total ?? 0);
         return `
           <tr>
-            <td style="padding:8px 0;">${name}</td>
-            <td style="padding:8px 0; text-align:center;">${qty}</td>
-            <td style="padding:8px 0; text-align:right;">?${price.toLocaleString('en-IN')}</td>
-            <td style="padding:8px 0; text-align:right;">?${total.toLocaleString('en-IN')}</td>
+            <td style="padding:8px 0; border-bottom:1px solid #eee;">${name}</td>
+            <td style="padding:8px 0; text-align:center; border-bottom:1px solid #eee;">${qty}</td>
+            <td style="padding:8px 0; text-align:right; border-bottom:1px solid #eee;">₹${price.toLocaleString('en-IN')}</td>
+            <td style="padding:8px 0; text-align:right; border-bottom:1px solid #eee;">₹${total.toLocaleString('en-IN')}</td>
           </tr>`;
       })
       .join('');
 
     const html = `
-      <div style="font-family:Arial,sans-serif; line-height:1.5; color:#111827;">
-        <h2>New Order</h2>
-        <p><strong>Customer</strong></p>
-        <p>
-          ${escapeHtml(customer.full_name)}<br />
-          ${escapeHtml(customer.email)}<br />
-          ${escapeHtml(customer.phone)}<br />
-          ${customer.gst ? `GST: ${escapeHtml(String(customer.gst))}<br />` : ''}
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; color: #333;">
+        <h2 style="color: #000;">New Order Received</h2>
+        <hr />
+        <p><strong>Customer:</strong> ${escapeHtml(customer.full_name)} (${customer.phone})</p>
+        <p><strong>Shipping Address:</strong><br />
+           ${escapeHtml(shipping.address1)}, ${escapeHtml(shipping.city)} - ${escapeHtml(shipping.pincode)}
         </p>
-        <p><strong>Shipping</strong></p>
-        <p>
-          ${escapeHtml(shipping.address1)}<br />
-          ${shipping.address2 ? `${escapeHtml(String(shipping.address2))}<br />` : ''}
-          ${escapeHtml(shipping.city)}, ${escapeHtml(shipping.state)} - ${escapeHtml(shipping.pincode)}<br />
-          ${escapeHtml(shipping.country ?? 'India')}
-        </p>
-        <p><strong>Order Items</strong></p>
-        <table style="width:100%; border-collapse:collapse;">
+        <table style="width:100%; border-collapse:collapse; margin-top:20px;">
           <thead>
-            <tr>
-              <th style="text-align:left; padding:8px 0; border-bottom:1px solid #e5e7eb;">Item</th>
-              <th style="text-align:center; padding:8px 0; border-bottom:1px solid #e5e7eb;">Qty</th>
-              <th style="text-align:right; padding:8px 0; border-bottom:1px solid #e5e7eb;">Unit Price</th>
-              <th style="text-align:right; padding:8px 0; border-bottom:1px solid #e5e7eb;">Total</th>
+            <tr style="background:#f9fafb;">
+              <th style="text-align:left; padding:8px;">Item</th>
+              <th style="text-align:center; padding:8px;">Qty</th>
+              <th style="text-align:right; padding:8px;">Total</th>
             </tr>
           </thead>
-          <tbody>
-            ${rows}
-          </tbody>
+          <tbody>${rows}</tbody>
         </table>
-        <p style="margin-top:16px;"><strong>Grand Total:</strong> ?${Number(grandTotal).toLocaleString('en-IN')}</p>
+        <h3 style="text-align:right;">Grand Total: ₹${Number(grandTotal).toLocaleString('en-IN')}</h3>
       </div>
     `;
 
-    const text = [
-      'New Order',
-      '',
-      'Customer',
-      `${customer.full_name}`,
-      `${customer.email}`,
-      `${customer.phone}`,
-      customer.gst ? `GST: ${customer.gst}` : '',
-      '',
-      'Shipping',
-      `${shipping.address1}`,
-      shipping.address2 ? `${shipping.address2}` : '',
-      `${shipping.city}, ${shipping.state} - ${shipping.pincode}`,
-      `${shipping.country ?? 'India'}`,
-      '',
-      'Order Items',
-      ...cart.map((item: any) => `${item.name} | Qty ${item.qty} | ?${Number(item.line_total ?? 0).toLocaleString('en-IN')}`),
-      '',
-      `Grand Total: ?${Number(grandTotal).toLocaleString('en-IN')}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    const resendKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendKey) {
-      return new Response(JSON.stringify({ error: 'Missing RESEND_API_KEY' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const emailPayload = {
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: [TO_EMAIL],
-      subject: `New Order from ${customer.full_name}`,
-      html,
-      text,
-    };
-
-    const resendResponse = await fetch('https://api.resend.com/emails', {
+    // Send via Resend
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${resendKey}`,
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(emailPayload),
+      body: JSON.stringify({
+        from: `${FROM_NAME} <${FROM_EMAIL}>`,
+        to: [TO_EMAIL],
+        subject: `Order Alert: ${customer.full_name}`,
+        html: html,
+      }),
     });
 
-    if (!resendResponse.ok) {
-      const errText = await resendResponse.text();
-      return new Response(JSON.stringify({ error: 'Email failed', detail: errText }), {
-        status: 500,
+    const resData = await res.json();
+
+    if (!res.ok) {
+      return new Response(JSON.stringify({ error: 'Resend API error', detail: resData }), {
+        status: res.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ success: true, id: resData.id }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (err) {
-    return new Response(JSON.stringify({ error: 'Unexpected error', detail: `${err}` }), {
+    return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
