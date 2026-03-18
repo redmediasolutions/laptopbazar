@@ -78,7 +78,6 @@ class CartItemData {
 class CartStore {
   static const String _key = 'electralap_cart_v2';
   static const String _pendingKey = 'electralap_cart_pending';
-  static const String _lastKey = 'electralap_cart_last';
   static Map<int, CartItemData> _memory = <int, CartItemData>{};
 
   static Map<int, CartItemData> getItems() {
@@ -167,14 +166,6 @@ class CartStore {
       items[stockId] = existing.copyWith(qty: existing.qty + 1);
     }
     _saveItems(items);
-    _storeLastItem(
-      stockId: stockId,
-      name: name,
-      image: image,
-      condition: condition,
-      config: config,
-      salePrice: salePrice,
-    );
   }
 
   static void setPendingProduct(StockProduct product) {
@@ -208,45 +199,6 @@ class CartStore {
       qty: 1,
     ).toJson();
     web.window.sessionStorage.setItem(_pendingKey, jsonEncode(payload));
-  }
-
-  static void _storeLastItem({
-    required int stockId,
-    required String name,
-    required String image,
-    required String condition,
-    required String config,
-    required double? salePrice,
-  }) {
-    if (!kIsWeb) return;
-    final payload = CartItemData(
-      stockId: stockId,
-      name: name,
-      image: image,
-      condition: condition,
-      config: config,
-      salePrice: salePrice,
-      qty: 1,
-    ).toJson();
-    web.window.localStorage.setItem(_lastKey, jsonEncode(payload));
-  }
-
-  static void ensureLastFallback() {
-    if (!kIsWeb) return;
-    final current = getItems();
-    if (current.isNotEmpty) return;
-    final raw = web.window.localStorage.getItem(_lastKey);
-    if (raw == null || raw.isEmpty) return;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) return;
-      final item = CartItemData.fromJson(decoded);
-      if (item == null) return;
-      current[item.stockId] = item;
-      _saveItems(current);
-    } catch (_) {
-      return;
-    }
   }
 
   static bool consumePendingProduct() {
@@ -305,5 +257,6 @@ class CartStore {
     _memory = <int, CartItemData>{};
     if (!kIsWeb) return;
     web.window.localStorage.removeItem(_key);
+    web.window.sessionStorage.removeItem(_pendingKey);
   }
 }

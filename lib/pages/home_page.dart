@@ -80,8 +80,41 @@ class _HomePageState extends State<HomePage> with PreloadStateMixin<HomePage> {
 
   @override
   Component build(BuildContext context) {
-    final trending = _products.take(3);
-    final bestDeals = _products.skip(3).take(3);
+    final seenNames = <String>{};
+    final seenImages = <String>{};
+    final uniqueProducts = <StockProduct>[];
+
+    // First pass: ensure unique by product name (case-insensitive).
+    for (final product in _products) {
+      final nameKey = product.productName.trim().toLowerCase();
+      if (seenNames.contains(nameKey)) continue;
+      seenNames.add(nameKey);
+      seenImages.add(product.productImage.trim());
+      uniqueProducts.add(product);
+    }
+
+    // Second pass: if we still need more variety, add items with new images.
+    if (uniqueProducts.length < _products.length) {
+      for (final product in _products) {
+        final imageKey = product.productImage.trim();
+        if (seenImages.contains(imageKey)) continue;
+        seenImages.add(imageKey);
+        uniqueProducts.add(product);
+      }
+    }
+
+    final usedIds = <int>{};
+    final trending = uniqueProducts.where((product) {
+      if (usedIds.contains(product.stockId)) return false;
+      usedIds.add(product.stockId);
+      return true;
+    }).take(3).toList(growable: false);
+
+    final bestDeals = uniqueProducts.where((product) {
+      if (usedIds.contains(product.stockId)) return false;
+      usedIds.add(product.stockId);
+      return true;
+    }).take(3).toList(growable: false);
 
     return div(classes: 'page', [
       const AppHeader(),

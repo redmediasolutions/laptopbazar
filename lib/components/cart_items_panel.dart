@@ -47,9 +47,6 @@ class _CartItemsPanelState extends State<CartItemsPanel> {
   }
 
   Future<void> _loadCart({bool preload = false}) async {
-    if (kIsWeb) {
-      CartStore.ensureLastFallback();
-    }
     final items = CartStore.getItemsList();
     if (items.isEmpty && component.stockId != null && component.stockId! > 0) {
       await _loadFromStockId(component.stockId!, preload: preload);

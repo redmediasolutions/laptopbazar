@@ -12,6 +12,7 @@ import 'package:electralap/components/cart_items_panel.dart'
     as _cart_items_panel;
 import 'package:electralap/pages/checkout.dart' as _checkout;
 import 'package:electralap/pages/productdetail.dart' as _productdetail;
+import 'package:electralap/pages/products.dart' as _products;
 
 /// Default [ServerOptions] for use with your Jaspr project.
 ///
@@ -51,6 +52,10 @@ ServerOptions get defaultServerOptions => ServerOptions(
           'productdetail',
           params: __productdetailProductDetailPage,
         ),
+    _products.ProductsPage: ClientTarget<_products.ProductsPage>(
+      'products',
+      params: __productsProductsPage,
+    ),
   },
 );
 
@@ -70,3 +75,9 @@ Map<String, Object?> __cart_items_panelCartItemsPanel(
 Map<String, Object?> __productdetailProductDetailPage(
   _productdetail.ProductDetailPage c,
 ) => {'stockId': c.stockId};
+Map<String, Object?> __productsProductsPage(_products.ProductsPage c) => {
+  'selectedBrand': c.selectedBrand,
+  'selectedCondition': c.selectedCondition,
+  'selectedPage': c.selectedPage,
+  'searchQuery': c.searchQuery,
+};

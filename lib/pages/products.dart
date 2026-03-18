@@ -10,6 +10,7 @@ import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
 import 'package:jaspr_router/jaspr_router.dart';
 
+@client
 class ProductsPage extends StatefulComponent {
   const ProductsPage({this.selectedBrand, this.selectedCondition, this.selectedPage, this.searchQuery, super.key});
 
@@ -22,37 +23,45 @@ class ProductsPage extends StatefulComponent {
   State<ProductsPage> createState() => _ProductsPageState();
 }
 
-class _ProductsPageState extends State<ProductsPage> with PreloadStateMixin<ProductsPage> {
+class _ProductsPageState extends State<ProductsPage> {
   List<StockProduct> _products = const [];
-  late final String _selectedBrand;
-  late final String _selectedCondition;
-  late final int _selectedPage;
-  late final String _searchQuery;
+  String _selectedBrand = 'all';
+  String _selectedCondition = 'all';
+  int _selectedPage = 1;
+  String _searchQuery = '';
   bool _isLoading = true;
   String? _error;
   static const int _pageSize = 9;
 
   @override
-  Future<void> preloadState() async {
-    try {
-      _products = await SupabaseService.fetchProducts();
-      _isLoading = false;
-      _error = null;
-    } catch (_) {
-      _isLoading = false;
-      _error = 'Unable to load products from database.';
+  void initState() {
+    super.initState();
+    final queryParams = kIsWeb ? Uri.base.queryParameters : const <String, String>{};
+    _selectedBrand = _normalizeBrand(queryParams['brand'] ?? component.selectedBrand);
+    _selectedCondition = _normalizeCondition(queryParams['condition'] ?? component.selectedCondition);
+    _selectedPage = _normalizePage(queryParams['page'] ?? component.selectedPage);
+    _searchQuery = _normalizeQuery(queryParams['q'] ?? component.searchQuery);
+    if (kIsWeb && _products.isEmpty) {
+      _loadProducts();
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _selectedBrand = _normalizeBrand(component.selectedBrand);
-    _selectedCondition = _normalizeCondition(component.selectedCondition);
-    _selectedPage = _normalizePage(component.selectedPage);
-    _searchQuery = _normalizeQuery(component.searchQuery);
-    if (_products.isEmpty) {
-      _loadProducts();
+  void _syncQueryFromUrlIfNeeded() {
+    if (!kIsWeb) return;
+    final queryParams = Uri.base.queryParameters;
+    final nextBrand = _normalizeBrand(queryParams['brand'] ?? component.selectedBrand);
+    final nextCondition = _normalizeCondition(queryParams['condition'] ?? component.selectedCondition);
+    final nextPage = _normalizePage(queryParams['page'] ?? component.selectedPage);
+    final nextQuery = _normalizeQuery(queryParams['q'] ?? component.searchQuery);
+
+    if (nextBrand != _selectedBrand ||
+        nextCondition != _selectedCondition ||
+        nextPage != _selectedPage ||
+        nextQuery != _searchQuery) {
+      _selectedBrand = nextBrand;
+      _selectedCondition = nextCondition;
+      _selectedPage = nextPage;
+      _searchQuery = nextQuery;
     }
   }
 
@@ -225,6 +234,7 @@ class _ProductsPageState extends State<ProductsPage> with PreloadStateMixin<Prod
 
   @override
   Component build(BuildContext context) {
+    _syncQueryFromUrlIfNeeded();
     return div(classes: 'page', [
       const AppHeader(),
       main_([

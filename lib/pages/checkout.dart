@@ -40,7 +40,7 @@ class CheckoutScreen extends StatefulComponent {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  static const String _whatsAppNumber = '918867735897';
+  static const String _whatsAppNumber = '918867504230';
 
   String _fullName = '';
   String _email = '';
@@ -61,9 +61,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
-      CartStore.ensureLastFallback();
-    }
     _items = CartStore.getItemsList();
   }
 
