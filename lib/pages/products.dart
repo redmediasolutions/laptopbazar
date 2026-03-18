@@ -244,49 +244,54 @@ class _ProductsPageState extends State<ProductsPage> {
             p(classes: 'products-subtitle', [text('${_filteredProducts.length} certified devices available')]),
             div(classes: 'products-page-layout', [
               aside(classes: 'filters-panel', [
-                h3([
-                  span(classes: 'material-symbols-outlined', [text('tune')]),
-                  text('Filters'),
-                ]),
-                div(classes: 'filter-group', [
-                  p(classes: 'filter-label', [text('Brand')]),
-                  select(
-                    [
-                      option([text('All Brands')],
-                          value: _productsUrlFor(brand: 'all', page: 1), selected: _selectedBrand == 'all'),
-                      option([text('Dell')],
-                          value: _productsUrlFor(brand: 'dell', page: 1), selected: _selectedBrand == 'dell'),
-                      option([text('HP')],
-                          value: _productsUrlFor(brand: 'hp', page: 1), selected: _selectedBrand == 'hp'),
-                      option([text('Lenovo')],
-                          value: _productsUrlFor(brand: 'lenovo', page: 1), selected: _selectedBrand == 'lenovo'),
-                      option([text('MacBook')],
-                          value: _productsUrlFor(brand: 'macbook', page: 1), selected: _selectedBrand == 'macbook'),
-                    ],
-                    classes: 'fake-select brand-select',
-                    attributes: {'onchange': 'window.location.href = this.value'},
-                  ),
-                  div(classes: 'filter-group', [
-                    p(classes: 'filter-label', [text('Condition')]),
-                    select(
-                      [
-                        option([text('All Conditions')],
-                            value: _productsUrlFor(condition: 'all', page: 1),
-                            selected: _selectedCondition == 'all'),
-                        option([text('A++')],
-                            value: _productsUrlFor(condition: 'a++', page: 1),
-                            selected: _selectedCondition == 'a++'),
-                      ],
-                      classes: 'fake-select brand-select',
-                      attributes: {'onchange': 'window.location.href = this.value'},
+                details([
+                  summary([
+                    span(classes: 'material-symbols-outlined', [text('tune')]),
+                    span(classes: 'filters-title', [text('Filters')]),
+                    span(classes: 'material-symbols-outlined', [text('expand_more')]),
+                  ]),
+                  div(classes: 'filters-content', [
+                    div(classes: 'filter-group', [
+                      p(classes: 'filter-label', [text('Brand')]),
+                      select(
+                        [
+                          option([text('All Brands')],
+                              value: _productsUrlFor(brand: 'all', page: 1), selected: _selectedBrand == 'all'),
+                          option([text('Dell')],
+                              value: _productsUrlFor(brand: 'dell', page: 1), selected: _selectedBrand == 'dell'),
+                          option([text('HP')],
+                              value: _productsUrlFor(brand: 'hp', page: 1), selected: _selectedBrand == 'hp'),
+                          option([text('Lenovo')],
+                              value: _productsUrlFor(brand: 'lenovo', page: 1), selected: _selectedBrand == 'lenovo'),
+                          option([text('MacBook')],
+                              value: _productsUrlFor(brand: 'macbook', page: 1), selected: _selectedBrand == 'macbook'),
+                        ],
+                        classes: 'fake-select brand-select',
+                        attributes: {'onchange': 'window.location.href = this.value'},
+                      ),
+                      div(classes: 'filter-group', [
+                        p(classes: 'filter-label', [text('Condition')]),
+                        select(
+                          [
+                            option([text('All Conditions')],
+                                value: _productsUrlFor(condition: 'all', page: 1),
+                                selected: _selectedCondition == 'all'),
+                            option([text('A++')],
+                                value: _productsUrlFor(condition: 'a++', page: 1),
+                                selected: _selectedCondition == 'a++'),
+                          ],
+                          classes: 'fake-select brand-select',
+                          attributes: {'onchange': 'window.location.href = this.value'},
+                        ),
+                      ]),
+                    ]),
+                    Link(
+                      to: NavPaths.products,
+                      classes: 'reset-btn',
+                      child: text('Reset Filters'),
                     ),
                   ]),
-                ]),
-                Link(
-                  to: NavPaths.products,
-                  classes: 'reset-btn',
-                  child: text('Reset Filters'),
-                ),
+                ], classes: 'filters-accordion'),
               ]),
               div([
                 div(classes: 'products-toolbar', [
