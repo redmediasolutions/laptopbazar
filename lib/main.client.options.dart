@@ -12,6 +12,7 @@ import 'package:electralap/components/cart_badge.dart' deferred as _cart_badge;
 import 'package:electralap/components/cart_items_panel.dart'
     deferred as _cart_items_panel;
 import 'package:electralap/pages/checkout.dart' deferred as _checkout;
+import 'package:electralap/pages/productdetail.dart' deferred as _productdetail;
 
 /// Default [ClientOptions] for use with your Jaspr project.
 ///
@@ -53,6 +54,10 @@ ClientOptions get defaultClientOptions => ClientOptions(
     'checkout': ClientLoader(
       (p) => _checkout.CheckoutScreen(),
       loader: _checkout.loadLibrary,
+    ),
+    'productdetail': ClientLoader(
+      (p) => _productdetail.ProductDetailPage(stockId: p['stockId'] as int?),
+      loader: _productdetail.loadLibrary,
     ),
   },
 );

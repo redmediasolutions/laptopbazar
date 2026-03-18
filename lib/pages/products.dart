@@ -131,6 +131,25 @@ class _ProductsPageState extends State<ProductsPage> with PreloadStateMixin<Prod
     return Uri(path: NavPaths.products, queryParameters: query.isEmpty ? null : query).toString();
   }
 
+  String _productsUrlFor({
+    String? brand,
+    String? condition,
+    String? query,
+    int? page,
+  }) {
+    final nextBrand = _normalizeBrand(brand ?? _selectedBrand);
+    final nextCondition = _normalizeCondition(condition ?? _selectedCondition);
+    final nextQuery = _normalizeQuery(query ?? _searchQuery);
+    final nextPage = page ?? 1;
+
+    final params = <String, String>{};
+    if (nextBrand != 'all') params['brand'] = nextBrand;
+    if (nextCondition != 'all') params['condition'] = nextCondition;
+    if (nextQuery.isNotEmpty) params['q'] = nextQuery;
+    if (nextPage > 1) params['page'] = '$nextPage';
+    return Uri(path: NavPaths.products, queryParameters: params.isEmpty ? null : params).toString();
+  }
+
   Component _pagination() {
     if (_totalPages <= 1) return div([]);
 
@@ -221,39 +240,37 @@ class _ProductsPageState extends State<ProductsPage> with PreloadStateMixin<Prod
                 ]),
                 div(classes: 'filter-group', [
                   p(classes: 'filter-label', [text('Brand')]),
-                  form(
+                  select(
                     [
-                      select(
-                        [
-                          option([text('All Brands')], value: 'all', selected: _selectedBrand == 'all'),
-                          option([text('Dell')], value: 'dell', selected: _selectedBrand == 'dell'),
-                          option([text('HP')], value: 'hp', selected: _selectedBrand == 'hp'),
-                          option([text('Lenovo')], value: 'lenovo', selected: _selectedBrand == 'lenovo'),
-                          option([text('MacBook')], value: 'macbook', selected: _selectedBrand == 'macbook'),
-                        ],
-                        name: 'brand',
-                        classes: 'fake-select brand-select',
-                        attributes: {'onchange': 'this.form.submit()'},
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        input(attributes: {'type': 'hidden', 'name': 'q', 'value': _searchQuery}),
-                      div(classes: 'filter-group', [
-                        p(classes: 'filter-label', [text('Condition')]),
-                        select(
-                          [
-                            option([text('All Conditions')], value: 'all', selected: _selectedCondition == 'all'),
-                            option([text('A++')], value: 'a++', selected: _selectedCondition == 'a++'),
-                          ],
-                          name: 'condition',
-                          classes: 'fake-select brand-select',
-                          attributes: {'onchange': 'this.form.submit()'},
-                        ),
-                        if (_searchQuery.isNotEmpty)
-                          input(attributes: {'type': 'hidden', 'name': 'q', 'value': _searchQuery}),
-                      ]),
+                      option([text('All Brands')],
+                          value: _productsUrlFor(brand: 'all', page: 1), selected: _selectedBrand == 'all'),
+                      option([text('Dell')],
+                          value: _productsUrlFor(brand: 'dell', page: 1), selected: _selectedBrand == 'dell'),
+                      option([text('HP')],
+                          value: _productsUrlFor(brand: 'hp', page: 1), selected: _selectedBrand == 'hp'),
+                      option([text('Lenovo')],
+                          value: _productsUrlFor(brand: 'lenovo', page: 1), selected: _selectedBrand == 'lenovo'),
+                      option([text('MacBook')],
+                          value: _productsUrlFor(brand: 'macbook', page: 1), selected: _selectedBrand == 'macbook'),
                     ],
-                    attributes: {'method': 'get', 'action': NavPaths.products},
+                    classes: 'fake-select brand-select',
+                    attributes: {'onchange': 'window.location.href = this.value'},
                   ),
+                  div(classes: 'filter-group', [
+                    p(classes: 'filter-label', [text('Condition')]),
+                    select(
+                      [
+                        option([text('All Conditions')],
+                            value: _productsUrlFor(condition: 'all', page: 1),
+                            selected: _selectedCondition == 'all'),
+                        option([text('A++')],
+                            value: _productsUrlFor(condition: 'a++', page: 1),
+                            selected: _selectedCondition == 'a++'),
+                      ],
+                      classes: 'fake-select brand-select',
+                      attributes: {'onchange': 'window.location.href = this.value'},
+                    ),
+                  ]),
                 ]),
                 Link(
                   to: NavPaths.products,

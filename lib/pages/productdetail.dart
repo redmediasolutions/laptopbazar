@@ -34,7 +34,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     if (_resolvedStockId == null && kIsWeb) {
       _resolvedStockId = int.tryParse(Uri.base.queryParameters['stockId'] ?? '');
     }
-    if (_product == null) {
+    if (kIsWeb && _product == null) {
       _loadProduct();
     }
   }
