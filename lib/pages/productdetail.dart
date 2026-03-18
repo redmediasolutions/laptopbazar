@@ -11,6 +11,7 @@ import 'package:jaspr/dom.dart';
 import 'package:jaspr/jaspr.dart';
 import 'package:jaspr_router/jaspr_router.dart';
 
+@client
 class ProductDetailPage extends StatefulComponent {
   const ProductDetailPage({required this.stockId, super.key});
 
@@ -20,62 +21,46 @@ class ProductDetailPage extends StatefulComponent {
   State<ProductDetailPage> createState() => _ProductDetailPageState();
 }
 
-class _ProductDetailPageState extends State<ProductDetailPage>
-    with PreloadStateMixin<ProductDetailPage> {
+class _ProductDetailPageState extends State<ProductDetailPage> {
   StockProduct? _product;
   bool _isLoading = true;
   String? _error;
-
-  @override
-  Future<void> preloadState() async {
-    await _loadProduct(preload: true);
-  }
+  int? _resolvedStockId;
 
   @override
   void initState() {
     super.initState();
+    _resolvedStockId = component.stockId;
+    if (_resolvedStockId == null && kIsWeb) {
+      _resolvedStockId = int.tryParse(Uri.base.queryParameters['stockId'] ?? '');
+    }
     if (_product == null) {
       _loadProduct();
     }
   }
 
-  Future<void> _loadProduct({bool preload = false}) async {
-    if (component.stockId == null) {
-      if (preload) {
+  Future<void> _loadProduct() async {
+    final stockId = _resolvedStockId ?? component.stockId;
+    if (stockId == null) {
+      setState(() {
         _isLoading = false;
         _error = 'Invalid product link.';
-      } else {
-        setState(() {
-          _isLoading = false;
-          _error = 'Invalid product link.';
-        });
-      }
+      });
       return;
     }
 
     try {
-      final product = await SupabaseService.fetchProductByStockId(component.stockId!);
-      if (preload) {
+      final product = await SupabaseService.fetchProductByStockId(stockId);
+      setState(() {
         _product = product;
         _isLoading = false;
         _error = product == null ? 'Product not found.' : null;
-      } else {
-        setState(() {
-          _product = product;
-          _isLoading = false;
-          _error = product == null ? 'Product not found.' : null;
-        });
-      }
+      });
     } catch (_) {
-      if (preload) {
+      setState(() {
         _isLoading = false;
         _error = 'Unable to load product details.';
-      } else {
-        setState(() {
-          _isLoading = false;
-          _error = 'Unable to load product details.';
-        });
-      }
+      });
     }
   }
 
@@ -124,7 +109,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             ),
           ]),
           AddToCartButton(
-            stockId: component.stockId ?? product.stockId,
+            stockId: _resolvedStockId ?? product.stockId,
             name: product.productName,
             image: product.productImage,
             condition: product.condition,

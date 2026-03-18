@@ -13,13 +13,15 @@ class NavPaths {
   static const home = '/';
   static const products = '/products';
   static const cart = '/cart';
-  static const productDetail = '/productdetail/:stockId';
+  static const productDetail = '/productdetail';
   static const about = '/about';
   static const profile = '/profile';
   static const checkout = '/checkout';
   static const contact = '/contact';
 
-  static String productDetailById(int stockId) => '/productdetail/$stockId';
+  static String productDetailById(int stockId) =>
+      Uri(path: productDetail, queryParameters: {'stockId': stockId.toString()})
+          .toString();
 }
 
 class Webnav {
@@ -54,7 +56,7 @@ class Webnav {
         Route(path: NavPaths.productDetail,
          builder: (context,
           state) => ProductDetailPage(
-            stockId: int.tryParse(state.params['stockId'] ?? ''),
+            stockId: int.tryParse(state.queryParams['stockId'] ?? ''),
           )),
 
         Route(path: NavPaths.about,

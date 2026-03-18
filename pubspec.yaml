@@ -18,5 +18,5 @@ dev_dependencies:
   lints: ^5.0.0
 
 jaspr:
-  mode: server
+  mode: static
   flutter: plugins
