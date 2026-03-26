@@ -80,22 +80,28 @@ class _HomePageState extends State<HomePage> with PreloadStateMixin<HomePage> {
 
   @override
   Component build(BuildContext context) {
+    final productsByRecency = [..._products]
+      ..sort((a, b) => b.stockId.compareTo(a.stockId));
+
     final seenNames = <String>{};
-    final seenImages = <String>{};
     final uniqueProducts = <StockProduct>[];
 
-    // First pass: ensure unique by product name (case-insensitive).
-    for (final product in _products) {
+    // First pass: ensure unique by product name (case-insensitive),
+    // preferring the latest stock entry so updated images win.
+    for (final product in productsByRecency) {
       final nameKey = product.productName.trim().toLowerCase();
       if (seenNames.contains(nameKey)) continue;
       seenNames.add(nameKey);
-      seenImages.add(product.productImage.trim());
       uniqueProducts.add(product);
     }
 
+    final seenImages = <String>{
+      for (final product in uniqueProducts) product.productImage.trim(),
+    };
+
     // Second pass: if we still need more variety, add items with new images.
     if (uniqueProducts.length < _products.length) {
-      for (final product in _products) {
+      for (final product in productsByRecency) {
         final imageKey = product.productImage.trim();
         if (seenImages.contains(imageKey)) continue;
         seenImages.add(imageKey);
